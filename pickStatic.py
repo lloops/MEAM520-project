@@ -50,24 +50,36 @@ def pickStatic(qstart, poses, target, color, map):
     ############################################################################
     Teobj = np.zeros((4,4)) #e in object frame, (make 10 mm from the target z axis to offset the cube dimension (20x20x20))
 
-    if(abs(Tobj0[0,2]) - 1 <= 0.01): #case the x axis of target cube is facing up or down
-        #adjust gripper so that the clips open left right
-        Teobj = np.array([[0, 1, 0, 0],
-                        [1, 0, 0, 0],
-                        [0, 0, -1, 10],
-                        [0, 0, 0, 1]])
-    elif(abs(Tobj0[2,2] + 1) <= 0.01): #case z axis of target is facing down
-        #do not care about orientation
-        Teobj = np.array([[1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, 1, 10],
-                        [0, 0, 0, 1]])
-    else: #x axis of target cube is facing left or right in horizontal
+    if(abs(Tobj0[2,2] - 1) <= 0.1): #case the z axis of target cube is facing up
         #adjust gripper to reach from top down
         Teobj = np.array([[1, 0, 0, 0],
                         [0, -1, 0, 0],
                         [0, 0, -1, 10],
                         [0, 0, 0, 1]])
+
+    elif(abs(Tobj0[2,2] + 1) <= 0.1): #case z axis of target is facing down
+        #adjust gripper to reach from top down
+        Teobj = np.array([[1, 0, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 1, -10],
+                        [0, 0, 0, 1]])
+
+    else: #z axis of target cube is facing left or right in horizontal
+
+        if(abs(Tobj0[0,2]) - 1 <= 0.1): #case x axis of target is facing up or down
+            #adjust gripper to reach from left to right
+            Teobj = np.array([[0, -1, 0, 0],
+                            [-1, 0, 0, 0],
+                            [0, 0, -1, 10],
+                            [0, 0, 0, 1]])
+
+        else:
+            #adjust gripper to reach from left to right
+            Teobj = np.array([[1, 0, 0, 0],
+                        [0, -1, 0, 0],
+                        [0, 0, -1, 10],
+                        [0, 0, 0, 1]])
+
 
     Te1 = np.matmul(Tobj1, Teobj) #this give the picking up pose of e wrt base frame
 
@@ -75,8 +87,8 @@ def pickStatic(qstart, poses, target, color, map):
     #so that path to the reaching point will not collide with the target object
     T_reach_e = np.array([[1, 0, 0, 0],
                         [0, 1, 0, 0],
-                        [0, 0, 1, -30],
-                        [0, 0, 0, 1]]) #move e back 30mm in Ze direction
+                        [0, 0, 1, -20],
+                        [0, 0, 0, 1]]) #move e back 20mm in Ze direction
 
     Treach1 = np.matmul(Te1, T_reach_e) #pose of the reaching point
 
@@ -90,13 +102,22 @@ def pickStatic(qstart, poses, target, color, map):
     q_target, isPos2 = IK.inverse(Te1)
 
     if(isPos == 0):
-        aj = np.array([[1, 0, 0, 0],
-                        [0, 0, -1, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, 0, 1]]) #try another orientation
+        # aj = np.array([[1, 0, 0, 0],
+        #                 [0, -1, 0, 0],
+        #                 [0, 0, -1, 20],
+        #                 [0, 0, 0, 1]]) #try gripper approach from the opposite side
 
-        Treach1 = np.matmul(Treach1, aj)
-        Te1 = np.matmul(Te1, aj)
+        print("not feasible")
+        #Te1 = np.matmul(Te1, aj)
+
+        #if not feasible, make gripper approach in X direction of the base
+        #set gripper orientation to parallel with X axis of base
+        Te1 = np.array([[0, 0, 1, Tobj1[0,-1]-10],
+                        [1, 0, 0, Tobj1[1,-1]],
+                        [0, 1, 0, Tobj1[2,-1]],
+                        [0, 0, 0, 1]]) 
+
+        Treach1 = np.matmul(Te1, T_reach_e)
         q_reach, isPos = IK.inverse(Treach1)
         q_target, isPos2 = IK.inverse(Te1)
 
@@ -107,11 +128,13 @@ def pickStatic(qstart, poses, target, color, map):
 
 
 
-
     #set gripper to fully open (30)
     q_reach = np.append(np.ravel(q_reach)[range(5)],30)
     q_target =  np.append(np.ravel(q_target)[range(5)],30)
+    # print("Treach1")
     # print(Treach1)
+    # print("Tobj1")
     # print(Tobj1)
-    # print(T)
+    # print("Te1")
+    # print(Te1)
     return q_target, q_reach, isReach
