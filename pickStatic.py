@@ -1,21 +1,13 @@
 #!/usr/bin/python2
 from time import sleep
 import numpy as np
-from calculateIK import calculateIK
+from calculateFK_jz import calculateFK
+from IKv_jz import IK_velocity
+from copy import deepcopy
 
 
 def pickStatic(qstart, poses, target, color, map):
-    """
-    This function plans a path to pick static objects
-    :param qstart:      initial pose of the robot (1x6).
-    :param map:         the map struct
-    :param poses:       all poses of the objects (lists of transformation matrices T_obj^0)
-    :param target:      index of poses of the target object (int)
-    :param color:      string of color of the robot we are using (blue or red)
-    :return:
-            path - Nx6 path until the object is picked up
-            isReach - True if reachable, False if not reachable
-    """
+
 
     isReach = True
     ########################################################################
@@ -45,96 +37,96 @@ def pickStatic(qstart, poses, target, color, map):
 
     Tobj1 = np.matmul(T01, Tobj0) #target object in base frame
 
-    ############################################################################
-    # Adjust orientation of end effector to face -z axis (white face)
-    ############################################################################
-    Teobj = np.zeros((4,4)) #e in object frame, (make 10 mm from the target z axis to offset the cube dimension (20x20x20))
+    FK = calculateFK()
 
-    if(abs(Tobj0[2,2] - 1) <= 0.1): #case the z axis of target cube is facing up
-        #adjust gripper to reach from top down
-        Teobj = np.array([[1, 0, 0, 0],
-                        [0, -1, 0, 0],
-                        [0, 0, -1, 10],
-                        [0, 0, 0, 1]])
+    jpos, t0e = FK.forward(qstart)
 
-    elif(abs(Tobj0[2,2] + 1) <= 0.1): #case z axis of target is facing down
-        #adjust gripper to reach from top down
-        Teobj = np.array([[1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, 1, -10],
-                        [0, 0, 0, 1]])
+    # end effector position
+    de1 = jpos[-1,:]
 
-    else: #z axis of target cube is facing left or right in horizontal
+    # wrist position
+    d31 = jpos[3,:]
 
-        if(abs(Tobj0[0,2]) - 1 <= 0.1): #case x axis of target is facing up or down
-            #adjust gripper to reach from left to right
-            Teobj = np.array([[0, -1, 0, 0],
-                            [-1, 0, 0, 0],
-                            [0, 0, -1, 10],
-                            [0, 0, 0, 1]])
+    # target position
+    dobj1 = Tobj1[0:3,-1] + np.array([5, -5, -5])
 
-        else:
-            #adjust gripper to reach from left to right
-            Teobj = np.array([[1, 0, 0, 0],
-                        [0, -1, 0, 0],
-                        [0, 0, -1, 10],
-                        [0, 0, 0, 1]])
+    # reach point
+    dreach1 = dobj1 + np.array([-70, 30, 30])
+
+    # initial v and w
+    #Vreach1 = dreach1 - d31
+    Vreach1 = dreach1 - de1
+    Wreach1 = np.array([0,0,0])
+
+    q = deepcopy(qstart)
+    dt = 0.1
+
+    path = []
 
 
-    Te1 = np.matmul(Tobj1, Teobj) #this give the picking up pose of e wrt base frame
+    lowerLim = np.array([-1.4, -1.2, -1.8, -1.9, -2.0, -15])
+    upperLim = np.array([1.4, 1.4, 1.7, 1.7, 1.5, 30])
 
-    #define another pose a distance away from object z axis as reaching point
-    #so that path to the reaching point will not collide with the target object
-    T_reach_e = np.array([[1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, 1, -20],
-                        [0, 0, 0, 1]]) #move e back 20mm in Ze direction
+    # Move Gripper to reach point
+    for i in range(25):
+        
+        dq = IK_velocity(q, Vreach1, Wreach1, 6)
+        q = q + dq * dt
 
-    Treach1 = np.matmul(Te1, T_reach_e) #pose of the reaching point
+        qcopy = np.ravel(q)
+        if(any([(qcopy[j] > upperLim[j] or qcopy[j] < lowerLim[j]) for j in range(6)])):
+            break
+
+        jpos, t0e = FK.forward(q)
+        de1 = jpos[-1,:]
+        Vreach1 = dreach1 - de1
+
+        path.append(q)
+
+    ######################################################
+    # move the griper to grab target
+    q_reach = np.ravel(path[-1])
+
+    #open gripper and change orientation
+    for i in range(20):
+        dq2 = [0,0,0, 0, -0.0785, 1.5]
+        q_reach = q_reach + dq2
+        path.append(q_reach)
 
 
-    ############################################################################
-    # Use IK to compute lynx config (q) of the picking up pose and reach pose
-    ############################################################################
-    IK = calculateIK()
+    # Move Gripper to Object
+    q_reach = np.ravel(path[-1])
+    jpos, t0e = FK.forward(q_reach)
+    de1 = jpos[-1,:]
+    V_grab = dobj1 - de1
 
-    q_reach, isPos = IK.inverse(Treach1)
-    q_target, isPos2 = IK.inverse(Te1)
+    for i in range(20):
 
-    if(isPos == 0):
-        # aj = np.array([[1, 0, 0, 0],
-        #                 [0, -1, 0, 0],
-        #                 [0, 0, -1, 20],
-        #                 [0, 0, 0, 1]]) #try gripper approach from the opposite side
+        dq = IK_velocity(q, V_grab, Wreach1, 6)
+        q_reach = q_reach + dq * dt
 
-        print("not feasible")
-        #Te1 = np.matmul(Te1, aj)
+        jpos, t0e = FK.forward(q_reach)
+        de1 = jpos[-1,:]
+        V_grab = dobj1 - de1
 
-        #if not feasible, make gripper approach in X direction of the base
-        #set gripper orientation to parallel with X axis of base
-        Te1 = np.array([[0, 0, 1, Tobj1[0,-1]-10],
-                        [1, 0, 0, Tobj1[1,-1]],
-                        [0, 1, 0, Tobj1[2,-1]],
-                        [0, 0, 0, 1]]) 
-
-        Treach1 = np.matmul(Te1, T_reach_e)
-        q_reach, isPos = IK.inverse(Treach1)
-        q_target, isPos2 = IK.inverse(Te1)
-
-    elif(isPos == 2): #case outside workspace, opponent's objects
-        print("opponent's objects")
-        isReach = False
-        return q_target, q_reach, isReach
+        path.append(q_reach)
 
 
 
-    #set gripper to fully open (30)
-    q_reach = np.append(np.ravel(q_reach)[range(5)],30)
-    q_target =  np.append(np.ravel(q_target)[range(5)],30)
-    # print("Treach1")
-    # print(Treach1)
-    # print("Tobj1")
-    # print(Tobj1)
-    # print("Te1")
-    # print(Te1)
-    return q_target, q_reach, isReach
+    #close gripper
+    q_reach =  np.ravel(path[-1])
+    for i in range(20):
+        dq2 = [0,0,0, 0, 0, -1.5]
+        q_reach = q_reach + dq2
+        path.append(q_reach)
+        
+
+    # Move back
+    q_reach =  np.ravel(path[-1])
+    for i in range(10):
+        dq2 = [0,-0.05, 0, 0, 0, 0]
+        q_reach = q_reach + dq2
+        path.append(q_reach)
+        
+
+    return path

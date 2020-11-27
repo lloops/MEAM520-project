@@ -219,7 +219,7 @@ class calculateIK():
         else:
             q = self.computeIK(T0e)
 
-
+        #q = self.computeIK(T0e)
 
         ##########################################
         #check joint limit

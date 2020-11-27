@@ -27,13 +27,13 @@ def constructPath():
     q1 = [0.8, 0.08, 0.9, -1.0, -1.57, 30]
     q2 = [0.8, 0.16, 0.8, -1.0, -1.57, 30]
     q3 = [0.8, 0.24, 0.7, -1.0, -1.57, 30]
-    q4 = [0.8, 0.32, 0.6, -1.0, -1.57, 30]
+    q4 = [0.8, 0.32, 0.6, -0.9, -1.57, 30]
     q5 = [0.8, 0.40, 0.4, -0.8, -1.57, 30]
     q6 = [0.8, 0.48, 0.3, -0.6, -1.57, 30]
     q7 = [0.8, 0.56, 0.2, -0.4, -1.57, 30]
     q8 = [0.8, 0.56, 0.2, -0.4, -1.57, 30]
     q9 = [0.8, 0.56, 0.2, -0.4, -1.57, 30]
-    
+
     path = [q1, q2, q3, q4, q5, q6, q7, q8, q9]
     return path
 
@@ -45,7 +45,7 @@ def extractDynamic(name, pose):
     return dpose
 
 def reachTarget(current, goal):
-    diff = (current[0]-goal[0])**2 + (current[1]-goal[1])**2 + (current[2]-goal[2])**2 + (current[3]-goal[3])**2 + (current[4]-goal[4])**2 + (current[5]-goal[5])**2 
+    diff = (current[0]-goal[0])**2 + (current[1]-goal[1])**2 + (current[2]-goal[2])**2 + (current[3]-goal[3])**2 + (current[4]-goal[4])**2 + (current[5]-goal[5])**2
     return np.sqrt(diff)<0.05
 
 def pickDynamic(lynx):
@@ -57,7 +57,7 @@ def pickDynamic(lynx):
         sleep(0.05)
         state = lynx.get_state()[0]
         reached_target = reachTarget(state, q0)
-        
+
     print("ready to grab, waiting for next target...")
 
     [name, pose, twist] = lynx.get_object_state()
@@ -94,8 +94,8 @@ def pickDynamic(lynx):
         if time[index] < nextArriveTime:
             nextArriveTime = time[index]
             distFromCenter = dist[index]
-            threshold = (100 - distFromCenter)/10 * 0.12
-    
+            threshold = (100 - distFromCenter)/10 * 0.1
+
     print("next arrive time:", nextArriveTime)
     print("threshold", threshold)
 
@@ -104,8 +104,11 @@ def pickDynamic(lynx):
         path = constructPath()
         for q in path:
             lynx.set_pos(q)
-            sleep(0.5)
+            sleep(0.3)
 
+        q9 = [0.8, 0.56, 0.2, -0.4, -1.57, 0]
+        lynx.set_pos(q9)
+        sleep(0.5)
         print("throwing away...")
         q = [0,0,0,0,0,0]
         lynx.set_pos(q)
