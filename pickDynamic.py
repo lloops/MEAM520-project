@@ -105,7 +105,7 @@ def pickDynamic(lynx, color):
         if time[index] < nextArriveTime:
             nextArriveTime = time[index]
             distFromCenter = dist[index]
-            threshold = (100 - distFromCenter)/10 * 0.12
+            threshold = (100 - distFromCenter)/10 * 0.1
 
     print("next arrive time:", nextArriveTime)
     print("threshold", threshold)
@@ -115,12 +115,12 @@ def pickDynamic(lynx, color):
         path = constructPath()
         for q in path:
             lynx.set_pos(q)
-            sleep(0.5)
+            sleep(0.3)
 
         q = [0.8, 0.56, 0.2, -0.4, -1.57, 0]
         lynx.set_pos(q)
         sleep(1)
 
         return True
-    
+
     return False
