@@ -182,10 +182,8 @@ if __name__=='__main__':
 
     color = 'blue'
 
-    map_struct = 0
-
     count = 0
 
-    path = drop(q_start, color, map_struct, count)
+    path = drop(q_start, color, count)
 
     print(path)
