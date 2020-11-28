@@ -8,7 +8,18 @@ from copy import deepcopy
 
 def pickStatic(qstart, poses, target, color, map):
 
-
+    """
+    This function plans a path to pick static objects
+    :param qstart:      initial pose of the robot (1x6).
+    :param map:         the map struct
+    :param poses:       all poses of the objects (lists of transformation matrices T_obj^0)
+    :param target:      index of poses of the target object (int)
+    :param color:      string of color of the robot we are using (blue or red)
+    :return:
+            path - Nx6 path until the object is picked up
+            isReach - True if reachable, False if not reachable
+    """
+    
     isReach = True
     ########################################################################
     # Transfer target pose to lynx base frame

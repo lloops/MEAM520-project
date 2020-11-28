@@ -213,9 +213,9 @@ class calculateIK():
             # print(Tnew)
 
             #Re-Compute IK for new T0e
-            #q = self.computeIK(Tnew)
-            q = self.computeIK(T0e)
-            isPos = 0
+            q = self.computeIK(Tnew)
+            #q = self.computeIK(T0e)
+            isPos = 1
         else:
             q = self.computeIK(T0e)
 
