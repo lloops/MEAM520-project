@@ -17,6 +17,12 @@ import operator
 
 if __name__=='__main__':
 
+    map_struct = loadmap("maps/final.txt")
+
+    if len(sys.argv) < 2:
+        print('usage: python final.py <color>')
+        sys.exit()
+
     color = sys.argv[1]
     lynx = ArmController(str(color))
     sleep(1)
