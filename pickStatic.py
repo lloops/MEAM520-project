@@ -1,8 +1,8 @@
 #!/usr/bin/python2
 from time import sleep
 import numpy as np
-from calculateFK_jz import calculateFK
-from IKv_jz import IK_velocity
+from calculateFK import calculateFK
+from IKv import IK_velocity
 from calculateIK import calculateIK
 from copy import deepcopy
 
