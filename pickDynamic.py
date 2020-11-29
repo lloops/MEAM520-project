@@ -37,25 +37,23 @@ def constructPath(distance):
     q8 = [0.8, 0.64, 0.15, -0.4, -1.57, 30]
     q9 = [0.8, 0.70, 0.1, -0.4, -1.57, 30]
 
-    path = []
+    path = [q1]
 
     if distance > 0:
-        path.append(q1)
-    if distance > 10:
         path.append(q2)
-    if distance > 20:
+    if distance > 10:
         path.append(q3)
-    if distance > 30:
+    if distance > 20:
         path.append(q4)
-    if distance > 40:
+    if distance > 30:
         path.append(q5)
-    if distance > 50:
+    if distance > 40:
         path.append(q6)
-    if distance > 60:
+    if distance > 50:
         path.append(q7)
-    if distance > 70:
+    if distance > 60:
         path.append(q8)
-    if distance > 80:
+    if distance > 70:
         path.append(q9)
 
     return path
