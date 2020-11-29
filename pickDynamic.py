@@ -160,7 +160,7 @@ def pickDynamic(lynx, color):
         
             return True
 
-        if nextArriveTime>3.14 and pickCenter:
+        if nextArriveTime>3.14 and pickCenter and max(time)<11:
             path = constructPath(100)
             print("path")
             print(path)
