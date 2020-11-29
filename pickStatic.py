@@ -52,7 +52,7 @@ class pickStatic:
             elif(path_counter == 0):
                 sleep(0.5)
             else:
-                sleep(3)
+                sleep(2.3)
 
             path_counter += 1
 
@@ -64,9 +64,9 @@ class pickStatic:
         #2. FOR BLUE: if the y coord of the obj is > 0 (-y coord are opponent's)
         #3. sometimes when simulation is initalized., a block may get struck off from the platform, which would fall to z coord (world frame) ~= -999
         if(self.color == "blue"):
-            static_lst = [ [i] for i in range(len(name)) if (name[i][5]=="s" and pose[i][1,3]>0 and pose[i][2,3]>0) ]
+            static_lst = [ [i] for i in range(len(name)) if (name[i][5]=="s" and pose[i][1,3]>0 and pose[i][1,3] < 440 and pose[i][2,3]>0) ]
         else:
-            static_lst = [ [i] for i in range(len(name)) if (name[i][5]=="s" and pose[i][1,3]<0 and pose[i][2,3]>0) ]
+            static_lst = [ [i] for i in range(len(name)) if (name[i][5]=="s" and pose[i][1,3]<0 and pose[i][1,3] > -440 and pose[i][2,3]>0) ]
 
         for j in range(len(static_lst)):
             Tobj_1 = self.T01.dot(pose[static_lst[j][0]])
@@ -92,7 +92,7 @@ class pickStatic:
         dobj1 = Tobj1[0:3,-1] + np.array([5, -5, -8])
 
         # reach point
-        dreach1 = dobj1 + np.array([-50, 25, 30])
+        dreach1 = dobj1 + np.array([-50, 25, 40])
 
         # initial v and w
         Vreach1 = dreach1 - de1
@@ -131,7 +131,7 @@ class pickStatic:
 
         #####################################################################
         # Velocity IK Method
-        
+
         # # Move Gripper to reach point
         # for i in range(25):
         #     dq = IK_velocity(q, Vreach1, Wreach1, 6)
@@ -190,8 +190,8 @@ class pickStatic:
 
         #close gripper
         q_reach =  np.ravel(path[-1])
-        for i in range(10):
-            dq2 = [0,0,0, 0, 0, -3]
+        for i in range(5):
+            dq2 = [0,0,0, 0, 0, -6]
             q_reach = q_reach + dq2
             path.append(q_reach)
 

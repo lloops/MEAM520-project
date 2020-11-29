@@ -38,7 +38,7 @@ def constructPath(distance):
     q9 = [0.8, 0.70, 0.1, -0.4, -1.57, 30]
 
     path = [q1, q2]
-    
+
     if distance > 10:
         path.append(q3)
     if distance > 20:
@@ -133,14 +133,14 @@ def pickDynamic(lynx, color):
             return True
 
         nextArriveTime = 20
-        realTimeFactor = 0.4
+        realTimeFactor = 0.8
 
         for index in range(len(time)):
             if time[index] < nextArriveTime:
                 nextArriveTime = time[index]
                 distFromCenter = dist[index]
                 distance = 100 - distFromCenter
-                threshold = distance/10 * (0.064 / realTimeFactor)
+                threshold = distance/10 * (0.1 / realTimeFactor)
 
         print("next arrive time:", nextArriveTime)
         print("threshold", threshold)
@@ -153,7 +153,7 @@ def pickDynamic(lynx, color):
 
             print("grabbing...")
             move(lynx, path, 0.24/realTimeFactor)
-        
+
             return True
 
         if nextArriveTime>3.14 and pickCenter and max(time)<11:

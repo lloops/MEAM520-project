@@ -6,14 +6,15 @@ from IKv import IK_velocity
 from calculateIK import calculateIK
 from copy import deepcopy
 from time import sleep
+import operator
 
 
-def drop(qstart, color, count):
+def drop(qstart, color, pose):
     """
     This function plans a path to drop objects to a target location
     :param qstart:      initial pose of the robot (1x6).
     :param color:      string of color of the robot we are using (blue or red)
-    :param count:      (int) the count (start from 0) of object picked up (if this is the second object
+    :param pose:      (1x3) the location in world frame of the highest object on green plate
                         picked up, then it will try to stack it on top of the first)
     :return:
             path - Nx6 path until the object is dropped
@@ -23,13 +24,21 @@ def drop(qstart, color, count):
     # Compute transformation matrix of drop pose
     #############################################
 
-    # Height of dropping location
-    height = 60.0 + count * 22.0
+    # Height and dropping location
+    if(len(pose) == 0):
+        # Case no object on green plate, drop to pre-defined location
+        height = 60.0 #+ 22.0
+        d_drop0_blue = np.array([100., 500., height, 1]).reshape((4,1))
+        d_drop0_red = np.array([-100., -500., height, 1]).reshape((4,1))
+
+    else:
+        # Else stack onto the highest cube
+        height = pose[-1] + 28.0
+        d_drop0_blue = np.array([pose[0], pose[1], height, 1]).reshape((4,1))
+        d_drop0_red = np.array([pose[0], pose[1], height, 1]).reshape((4,1))
 
 
     if (str(color).lower() == 'blue'):
-
-        d_drop0_blue = np.array([100., 500., height, 1]).reshape((4,1))
 
         T01 = np.array([[-1, 0, 0, 200],
                         [0, -1, 0, 200],
@@ -51,8 +60,6 @@ def drop(qstart, color, count):
                         [0, 0, 0, 1]])
 
     elif(str(color).lower() == 'red'):
-
-        d_drop0_red = np.array([-100., -500., height, 1]).reshape((4,1))
 
         T01 = np.array([[1, 0, 0, 200],
                        [0, 1, 0, 200],
@@ -117,14 +124,17 @@ def drop(qstart, color, count):
     # Release and return
     q_release = deepcopy(q_drop)
 
+    release_count = 1
     while (q_release[-1] < 25):
 
-        dq2 = [0,0,0, 0, 0, 10]
+        dq2 = [0,0,0, 0, 0, 5]
+        dq2[-1] += release_count*2
         q_release = q_release + dq2
         path.append(q_release)
+        release_count += 1
 
 
-    q_release[1] = q_drop[1] - 0.5
+    q_release[1] = q_drop[1] - 0.3
 
     path.append(q_release)
 
@@ -133,12 +143,32 @@ def drop(qstart, color, count):
 ##########################################################################
 # Control Lynx to drop
 
-def drop_object(lynx, color, count):
+def drop_object(lynx, color):
 
     qStart, vel = lynx.get_state()
 
-    path = drop(qStart, color, count)
-    # print("path", path)
+    # get pose of all cubes on green plate
+    [name, pose, twist] = lynx.get_object_state()
+
+    if(color == "blue"):
+        list = [[pose[i], pose[i][2,3]] for i in range(len(name)) if (pose[i][1,3]>0 and pose[i][1,3] > 440 and pose[i][2,3]>0) ]
+    else:
+        list = [ [pose[i], pose[i][2,3]] for i in range(len(name)) if (pose[i][1,3]<0 and pose[i][1,3] < -440 and pose[i][2,3]>0)]
+
+    # Get path of dropping object
+    if(len(list) == 0):
+        path = drop(qStart, color, [])
+
+    else:
+
+        list = sorted(list, key=operator.itemgetter(1))
+
+        target_pose = list[-1][0]
+
+        target_loc = target_pose[0:3,-1]
+
+        path = drop(qStart, color, target_loc)
+        
 
     # iterate over target waypoints
     for p in path:
