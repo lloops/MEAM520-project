@@ -86,7 +86,7 @@ def move(lynx, path, stepTime):
 
     close = [q[0], q[1], q[2], q[3], q[4], 0]
     lynx.set_pos(close)
-    sleep(1)
+    sleep(0.5)
 
 def pickDynamic(lynx, color):
     q0 = [0.8, 0, 1.0, -1.0, -1.57, 30]
