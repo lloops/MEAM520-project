@@ -64,7 +64,7 @@ def extractDynamic(name, pose):
     return dpose
 
 def reachTarget(current, goal):
-    return np.linalg.norm(np.array(current) - np.array(goal))<0.03
+    return np.linalg.norm(np.array(current[0:4]) - np.array(goal[0:4]))<0.08
 
 def computeTime(rad, color):
     if color == 'red':
@@ -81,16 +81,16 @@ def computeTime(rad, color):
 
 def move(lynx, path, stepTime):
     for q in path:
-        lynx.set_pos(q)
+        lynx.command(q)
         sleep(stepTime)
 
     close = [q[0], q[1], q[2], q[3], q[4], 0]
-    lynx.set_pos(close)
+    lynx.command(close)
     sleep(0.5)
 
 def pickDynamic(lynx, color):
     q0 = [0.8, 0, 1.0, -1.0, -1.57, 30]
-    lynx.set_pos(q0)
+    lynx.command(q0)
 
     pos = lynx.get_state()[0]
 
@@ -163,7 +163,7 @@ def pickDynamic(lynx, color):
             print("grabbing...")
             move(lynx, path, 0.1/realTimeFactor)
             return True
-        
+
         elif nextArriveTime>5:
             print("waiting time too long, exit...")
             return False
