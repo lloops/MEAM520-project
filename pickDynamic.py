@@ -64,7 +64,8 @@ def extractDynamic(name, pose):
     return dpose
 
 def reachTarget(current, goal):
-    return np.linalg.norm(np.array(current[0:4]) - np.array(goal[0:4]))<0.08
+    print(np.linalg.norm(np.array(current[0:4]) - np.array(goal[0:4])))
+    return np.linalg.norm(np.array(current[0:4]) - np.array(goal[0:4]))<0.05
 
 def computeTime(rad, color):
     if color == 'red':
@@ -86,7 +87,7 @@ def move(lynx, path, stepTime):
 
     close = [q[0], q[1], q[2], q[3], q[4], 0]
     lynx.command(close)
-    sleep(0.5)
+    sleep(0.2)
 
 def pickDynamic(lynx, color):
     q0 = [0.8, 0, 1.0, -1.0, -1.57, 30]
@@ -97,13 +98,13 @@ def pickDynamic(lynx, color):
     print("moving to position...")
 
     while not reachTarget(pos, q0):
-        sleep(0.05)
+        sleep(0.01)
         pos = lynx.get_state()[0]
 
     print("ready to grab, waiting for next target...")
 
     while True:
-        sleep(0.05)
+        sleep(0.01)
 
         [name, pose, twist] = lynx.get_object_state()
         dpose = extractDynamic(name, pose)
@@ -133,14 +134,13 @@ def pickDynamic(lynx, color):
             return False
 
         nextArriveTime = 20
-        realTimeFactor = 0.8
 
         for index in range(len(time)):
             if time[index] < nextArriveTime:
                 nextArriveTime = time[index]
                 distFromCenter = dist[index]
                 distance = 100 - distFromCenter
-                threshold = distance/10 * (0.05 / realTimeFactor)
+                threshold = distance/10 * 0.05
 
         print("next arrive time:", nextArriveTime)
         print("threshold", threshold)
@@ -152,7 +152,7 @@ def pickDynamic(lynx, color):
             print(path)
 
             print("grabbing...")
-            move(lynx, path, 0.1/realTimeFactor)
+            move(lynx, path, 0.1)
             return True
 
         elif nextArriveTime>3 and pickCenter and max(time)<11:
@@ -161,7 +161,7 @@ def pickDynamic(lynx, color):
             print(path)
 
             print("grabbing...")
-            move(lynx, path, 0.1/realTimeFactor)
+            move(lynx, path, 0.1)
             return True
 
         elif nextArriveTime>5:
