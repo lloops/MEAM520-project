@@ -29,38 +29,27 @@ if __name__=='__main__':
     # Main Code
     #############################################
 
-    pickDynamic(lynx, color)
+    if pickDynamic(lynx, color):
+        drop_object(lynx, color)
+
+    staticMover = pickStatic(lynx, color)
+    staticMover.pick()
+    drop_object(lynx, color)
+
+    if pickDynamic(lynx, color):
+        drop_object(lynx, color)
+
+    staticMover = pickStatic(lynx, color)
+    staticMover.pick()
     drop_object(lynx, color)
 
     staticMover = pickStatic(lynx, color)
     staticMover.pick()
     drop_object(lynx, color)
 
-    pickDynamic(lynx, color)
-    drop_object(lynx, color)
-
     staticMover = pickStatic(lynx, color)
     staticMover.pick()
     drop_object(lynx, color)
-
-    staticMover = pickStatic(lynx, color)
-    staticMover.pick()
-    drop_object(lynx, color)
-
-    staticMover = pickStatic(lynx, color)
-    staticMover.pick()
-    drop_object(lynx, color)
-
-    # pickDynamic(lynx, color)
-    # drop_object(lynx, color, 2)
-
-    # pickDynamic(lynx, color)
-    # drop_object(lynx, color, 3)
-
-    # pickDynamic(lynx, color)
-    # drop_object(lynx, color, 4)
-
-
 
     lynx.stop()
 
