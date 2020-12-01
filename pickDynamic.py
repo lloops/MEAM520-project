@@ -131,7 +131,7 @@ def pickDynamic(lynx, color):
 
         if len(time)==0:
             print("no more dynamic objects, exit")
-            return False
+            return 0
 
         nextArriveTime = 20
 
@@ -153,7 +153,7 @@ def pickDynamic(lynx, color):
 
             print("grabbing...")
             move(lynx, path, 0.1)
-            return True
+            return 1
 
         elif nextArriveTime>3 and pickCenter and max(time)<11:
             path = constructPath(100)
@@ -162,8 +162,8 @@ def pickDynamic(lynx, color):
 
             print("grabbing...")
             move(lynx, path, 0.1)
-            return True
+            return 1
 
         elif nextArriveTime>4:
             print("waiting time too long, exit...")
-            return False
+            return 2
