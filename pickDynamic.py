@@ -164,6 +164,6 @@ def pickDynamic(lynx, color):
             move(lynx, path, 0.1)
             return True
 
-        elif nextArriveTime>5:
+        elif nextArriveTime>4:
             print("waiting time too long, exit...")
             return False
