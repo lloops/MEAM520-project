@@ -140,30 +140,30 @@ def pickDynamic(lynx, color):
                 nextArriveTime = time[index]
                 distFromCenter = dist[index]
                 distance = 100 - distFromCenter
-                threshold = distance/10 * (0.1 / realTimeFactor)
+                threshold = distance/10 * (0.05 / realTimeFactor)
 
         print("next arrive time:", nextArriveTime)
         print("threshold", threshold)
         print("pickCenter", pickCenter)
 
-        if any(t < threshold and t > 0.7 * threshold for t in time):
+        if any(t < threshold and t > 0.5 * threshold for t in time):
             path = constructPath(distance)
             print("path")
             print(path)
 
             print("grabbing...")
-            move(lynx, path, 0.24/realTimeFactor)
+            move(lynx, path, 0.1/realTimeFactor)
             return True
 
-        elif nextArriveTime>4 and pickCenter and max(time)<11:
+        elif nextArriveTime>3 and pickCenter and max(time)<11:
             path = constructPath(100)
             print("path")
             print(path)
 
             print("grabbing...")
-            move(lynx, path, 0.24/realTimeFactor)
+            move(lynx, path, 0.1/realTimeFactor)
             return True
         
-        elif nextArriveTime>8:
+        elif nextArriveTime>5:
             print("waiting time too long, exit...")
             return False
