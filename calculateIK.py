@@ -207,19 +207,14 @@ class calculateIK():
                             [proj_x[1], proj_y[1], proj_z[1], y0e],\
                             [proj_x[2], proj_y[2], proj_z[2], z0e],\
                             [0,0,0,1]])
-            # print("T0e:")
-            # print(T0e)
-            # print("Transform to Closest Te0:")
-            # print(Tnew)
 
             #Re-Compute IK for new T0e
             q = self.computeIK(Tnew)
-            #q = self.computeIK(T0e)
+
             isPos = 1
         else:
             q = self.computeIK(T0e)
 
-        #q = self.computeIK(T0e)
 
         ##########################################
         #check joint limit
@@ -257,44 +252,3 @@ class calculateIK():
         np.set_printoptions(precision=3,suppress=True)
         #print(q)
         return q, isPos
-
-
-
-
-
-# if __name__=='__main__':
-#     main = Main()
-#     #Zero Position
-#     T0e = np.array([[0,0,1,255.325],[0,-1,0,0],[1,0,0,222.25],[0,0,0,1]])
-
-#     d1 = 76.2                      # Distance between joint 1 and joint 2
-#     a2 = 146.05                    # Distance between joint 2 and joint 3
-#     a3 = 187.325                   # Distance between joint 3 and joint 4
-#     d4 = 34                        # Distance between joint 4 and joint 5
-#     d5 = 68
-
-#     #Upperlim
-#     #T0e = np.array([[0.982,0,0.186,-308.894],[0,-1,0,0.002],[0.186,0,-0.982,88.755],[0,0,0,1]])
-
-#     #zero position with not feasible orientation
-#     #T0e = np.array([[0,0.1,0.9,255.325], [0,-0.9,0.1,0],[1,0,0,222.25],[0,0,0,1]])
-
-#     # T0e = np.array([[-1,0,0,0],[0,-1,0,0],[0,0,1,d1+a2+a3+d5-150],[0,0,0,1]]) # straight up at limits
-
-#     # Target 1
-#     # T0e = np.array([[   0.019,    0.969,    0.245,   47.046],[   0.917,   -0.115,    0.382,   73.269],[   0.398 ,   0.217,   -0.891,  100.547],[   0.,       0. ,      0.,       1.]])
-
-#     # Target 2
-#     # T0e = np.array([[  -0.993,   -0.,       0.119,  -96.936],[   0.,      -1.,      -0.,       0.   ],[   0.119,    0.,       0.993,  401.229],[   0. ,      0.  ,     0.  ,     1.   ]])
-
-#     # Target 3
-#     # T0e = np.array([ [-0.3409003, -0.1074855,  0.9339346, 282.96],[0.7842780, -0.5802868,  0.2194888, -48.302],[0.5183581,  0.8072881,  0.2821184, 235.071 ], [0,0,0,1]])
-
-#     # Target 4
-#     # T0e = np.array([[  0.5054096, -0.8370580, -0.2095115, -45],[-0.0305796,  0.2252773, -0.9738147,-300],[0.8623375,  0.4985821,  0.0882604, 63 ],[0,0,0,1]])
-
-
-#     (q, isPos) = main.inverse(T0e)
-#     #q = main.computeIK(T0e)
-#     np.set_printoptions(precision=3,suppress=True)
-#     #print(q)

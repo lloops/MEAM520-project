@@ -29,9 +29,9 @@ def computeRad(x, y, color):
 def constructPath(distance):
     q1 = [0.8, 0.08, 0.9, -1.0, -1.57, 30]
     q2 = [0.8, 0.16, 0.8, -1.0, -1.57, 30]
-    q3 = [0.8, 0.24, 0.7, -1.0, -1.57, 30]
-    q4 = [0.8, 0.32, 0.6, -1.0, -1.57, 30]
-    q5 = [0.8, 0.40, 0.4, -0.8, -1.57, 30]
+    q3 = [0.8, 0.24, 0.7, -0.9, -1.57, 30]
+    q4 = [0.8, 0.32, 0.6, -0.9, -1.57, 30]
+    q5 = [0.8, 0.40, 0.4, -0.75, -1.57, 30]
     q6 = [0.8, 0.48, 0.3, -0.6, -1.57, 30]
     q7 = [0.8, 0.56, 0.2, -0.4, -1.57, 30]
     q8 = [0.8, 0.64, 0.15, -0.4, -1.57, 30]
@@ -58,13 +58,14 @@ def constructPath(distance):
 
 def extractDynamic(name, pose):
     dpose = []
-    for i in range(13):
+    dynamic_index = []
+    for i in range(len(name)):
         if name[i][5]=="d":
             dpose.append(pose[i])
-    return dpose
+            dynamic_index.append(i)
+    return dpose, dynamic_index
 
 def reachTarget(current, goal):
-    print(np.linalg.norm(np.array(current[0:4]) - np.array(goal[0:4])))
     return np.linalg.norm(np.array(current[0:4]) - np.array(goal[0:4]))<0.05
 
 def computeTime(rad, color):
@@ -86,11 +87,37 @@ def move(lynx, path, stepTime):
         sleep(stepTime)
 
     close = [q[0], q[1], q[2], q[3], q[4], 0]
-    lynx.command(close)
-    sleep(0.2)
+    lynx.set_pos(close)
+    sleep(1)
+    up = [q[0], q[1]-0.2, q[2]-0.1, q[3], q[4], 0]
+    lynx.set_pos(up)
+    sleep(0.5)
 
 def pickDynamic(lynx, color):
-    q0 = [0.8, 0, 1.0, -1.0, -1.57, 30]
+    [name, pose, twist] = lynx.get_object_state()
+    dpose, dynamic_index = extractDynamic(name, pose)
+
+    time = []
+    for i in range(len(dpose)):
+        mat = dpose[i]
+        x = round(mat[0][3], 2)
+        y = round(mat[1][3], 2)
+        z = round(mat[2][3], 2)
+
+        if z==60:
+            rad = computeRad(x, y, color)
+            t = computeTime(rad, color)
+            time.append(t)
+
+    if len(time)==0:
+        print("no more dynamic objects")
+        return 0, -1
+
+    if min(time)>4:
+        print("waiting time too long, exit...")
+        return 0, -1
+
+    q0 = [0.8, 0, 1.0, -1.05, -1.57, 30]
     lynx.command(q0)
 
     pos = lynx.get_state()[0]
@@ -107,19 +134,22 @@ def pickDynamic(lynx, color):
         sleep(0.01)
 
         [name, pose, twist] = lynx.get_object_state()
-        dpose = extractDynamic(name, pose)
+        dpose, dynamic_index = extractDynamic(name, pose)
 
         time = []
         dist = []
+        dynamic_list = []
 
         pickCenter = False
-        for mat in dpose:
+        for i in range(len(dpose)):
+            mat = dpose[i]
             x = round(mat[0][3], 2)
             y = round(mat[1][3], 2)
             z = round(mat[2][3], 2)
 
             if z==60 and abs(x)<8 and abs(y)<8:
                 pickCenter = True
+                centerIndex = dynamic_index[i]
 
             if z==60:
                 distFromCenter = np.sqrt(x*x + y*y)
@@ -128,16 +158,18 @@ def pickDynamic(lynx, color):
                 rad = computeRad(x, y, color)
                 t = computeTime(rad, color)
                 time.append(t)
+                dynamic_list.append(dynamic_index[i])
 
         if len(time)==0:
-            print("no more dynamic objects, exit")
-            return 0
+            print("no more dynamic objects")
+            return 0, -1
 
         nextArriveTime = 20
 
         for index in range(len(time)):
             if time[index] < nextArriveTime:
                 nextArriveTime = time[index]
+                target_index = dynamic_list[index]
                 distFromCenter = dist[index]
                 distance = 100 - distFromCenter
                 threshold = distance/10 * 0.05
@@ -153,7 +185,7 @@ def pickDynamic(lynx, color):
 
             print("grabbing...")
             move(lynx, path, 0.1)
-            return 1
+            return 1, target_index
 
         elif nextArriveTime>3 and pickCenter and max(time)<11:
             path = constructPath(100)
@@ -162,8 +194,8 @@ def pickDynamic(lynx, color):
 
             print("grabbing...")
             move(lynx, path, 0.1)
-            return 1
+            return 1, centerIndex
 
         elif nextArriveTime>4:
             print("waiting time too long, exit...")
-            return 2
+            return 0, -1

@@ -9,13 +9,15 @@ from time import sleep
 import operator
 
 
-def drop(qstart, color, pose):
+def drop(qstart, color, pose, list_len, object_pose):
     """
     This function plans a path to drop objects to a target location
     :param qstart:      initial pose of the robot (1x6).
-    :param color:      string of color of the robot we are using (blue or red)
-    :param pose:      (1x3) the location in world frame of the highest object on green plate
-                        picked up, then it will try to stack it on top of the first)
+    :param color:       string of color of the robot we are using (blue or red)
+    :param pose:        position (3 dimensional) of the previously dropped object
+    :param list_len:    Number of objects already on the dropping area
+    :param object_pose: pose (4x4) of the current dropping object
+
     :return:
             path - Nx6 path until the object is dropped
     """
@@ -24,15 +26,32 @@ def drop(qstart, color, pose):
     # Compute transformation matrix of drop pose
     #############################################
 
-    # Height and dropping location
-    if(len(pose) == 0):
-        # Case no object on green plate, drop to pre-defined location
-        height = 60.0 #+ 22.0
-        d_drop0_blue = np.array([100., 500., height, 1]).reshape((4,1))
-        d_drop0_red = np.array([-100., -500., height, 1]).reshape((4,1))
+    # Initialize FK and offsets btw Gripper center and object center
+    FK = calculateFK()
+    X_offset = 0
+    Y_offset = 0
 
+    # Height and dropping location
+    # Case no object is present at dropping area, drop to assigned location
+    if(len(pose) == 0 or list_len == 0):
+        height = 50.0
+        d_drop0_blue = np.array([120., 520., height, 1]).reshape((4,1))
+        d_drop0_red = np.array([-120., -520., height, 1]).reshape((4,1))
+
+    # Case already 3 objects at dropping area, drop to another location
+    elif(list_len == 3):
+        height = 50.0
+        d_drop0_blue = np.array([70., 520., height, 1]).reshape((4,1))
+        d_drop0_red = np.array([-70., -520., height, 1]).reshape((4,1))
+
+    # Case already 5 objects at dropping area, drop to the 3rd location
+    elif(list_len == 5):
+        height = 50.0
+        d_drop0_blue = np.array([120., 470., height, 1]).reshape((4,1))
+        d_drop0_red = np.array([-120., -470., height, 1]).reshape((4,1))
+
+    # else drop on top of the previously dropped object
     else:
-        # Else stack onto the highest cube
         height = pose[-1] + 28.0
         d_drop0_blue = np.array([pose[0], pose[1], height, 1]).reshape((4,1))
         d_drop0_red = np.array([pose[0], pose[1], height, 1]).reshape((4,1))
@@ -51,11 +70,26 @@ def drop(qstart, color, pose):
         d_drop1_blue = d_drop1_blue[0:3,:]
 
         # Angle btw X_base axis and drop location
-        cos_theta = ((np.array([1,0,0]).dot(d_drop1_blue)) / np.linalg.norm(d_drop1_blue))[0]
+        d_drop1_blue_xy = np.array([d_drop1_blue[0], d_drop1_blue[1], 0])
+        cos_theta = ((np.array([1,0,0]).dot(d_drop1_blue_xy)) / np.linalg.norm(d_drop1_blue_xy))[0]
         theta = np.arccos(cos_theta)
 
-        Te1 = np.array([[np.sin(theta), 0, cos_theta, d_drop1_blue[0,0]],
-                        [cos_theta, 0, -np.sin(theta), d_drop1_blue[1,0]],
+        # Update Height
+        if (len(object_pose)):
+            obj_0 = np.matmul(T01, np.array(object_pose))
+            Z_obj = obj_0[2,-1]
+            X_obj = obj_0[0,-1]
+            Y_obj = obj_0[1,-1]
+
+            positions, _ = FK.forward(qstart)
+            Z_e = positions[-1,2]
+            height += (Z_e - Z_obj)
+            X_offset = positions[-1,0] - X_obj
+            Y_offset = positions[-1,1] - Y_obj
+
+
+        Te1 = np.array([[np.sin(theta), 0, cos_theta, d_drop1_blue[0,0] + X_offset],
+                        [cos_theta, 0, -np.sin(theta), d_drop1_blue[1,0] - 3],
                         [0, 1, 0, height],
                         [0, 0, 0, 1]])
 
@@ -71,11 +105,25 @@ def drop(qstart, color, pose):
         d_drop1_red = d_drop1_red[0:3,:]
 
         # Angle btw X_base axis and drop location
-        cos_theta = ((np.array([1,0,0]).dot(d_drop1_red)) / np.linalg.norm(d_drop1_red))[0]
+        d_drop1_red_xy = np.array([d_drop1_red[0], d_drop1_red[1], 0])
+        cos_theta = ((np.array([1,0,0]).dot(d_drop1_red_xy)) / np.linalg.norm(d_drop1_red_xy))[0]
         theta = np.arccos(cos_theta)
 
-        Te1 = np.array([[np.sin(theta), 0, cos_theta, d_drop1_red[0,0]],
-                        [cos_theta, 0, -np.sin(theta), d_drop1_red[1,0]],
+        # Update Height
+        if (len(object_pose)):
+            obj_0 = np.matmul(T01, np.array(object_pose))
+            Z_obj = obj_0[2,-1]
+            X_obj = obj_0[0,-1]
+            Y_obj = obj_0[1,-1]
+
+            positions, _ = FK.forward(qstart)
+            Z_e = positions[-1,2]
+            height += (Z_e - Z_obj)
+            X_offset = positions[-1,0] - X_obj
+            Y_offset = positions[-1,1] - Y_obj
+
+        Te1 = np.array([[np.sin(theta), 0, cos_theta, d_drop1_red[0,0] + X_offset],
+                        [cos_theta, 0, -np.sin(theta), d_drop1_red[1,0] - 3],
                         [0, 1, 0, height],
                         [0, 0, 0, 1]])
 
@@ -87,6 +135,11 @@ def drop(qstart, color, pose):
     #############################################
     # Compute IK for Drop off pose
     #############################################
+
+    print("height")
+    print(height)
+    print("offsets")
+    print(X_offset, Y_offset)
 
     IK = calculateIK()
 
@@ -103,12 +156,10 @@ def drop(qstart, color, pose):
         print('Not feasible pose')
         return path
 
-    #path.append(qstart)
-
     # Define intermediate point
     Tinter1 = deepcopy(Te1)
 
-    Tinter1[0:3,-1] = np.array([Te1[0,-1] - 30, Te1[1,-1] + 50, height + 40])
+    Tinter1[0:3,-1] = np.array([Te1[0,-1] - 30, Te1[1,-1] + 70, height + 70])
 
     q_inter, isPos = IK.inverse(Tinter1)
 
@@ -128,58 +179,105 @@ def drop(qstart, color, pose):
     while (q_release[-1] < 25):
 
         dq2 = [0,0,0, 0, 0, 5]
-        dq2[-1] += release_count*2
+        dq2[-1] += release_count
         q_release = q_release + dq2
         path.append(q_release)
         release_count += 1
 
+    for i in range(10):
+        q_release[1] -= 0.03
+        q_release[2] -= 0.01
 
-    q_release[1] = q_drop[1] - 0.3
-
-    path.append(q_release)
+        path.append(q_release)
 
     return path
+
+
 
 ##########################################################################
 # Control Lynx to drop
 
-def drop_object(lynx, color):
+def drop_object(lynx, color, object_index, value):
+    """
+    This function calls drop and use Lynx.ArmController to execute the drop path
+    :param lynx:            ArmController instance
+    :param color:           string of color of the robot we are using (blue or red)
+    :param object_index:    Index of the object currently dropping (get from pickStatic)
+    :param value:           value returned by pickDynamic()
+                            (1 if dynamic object, 2 if static object)
+
+    :return:
+        None
+    """
 
     qStart, vel = lynx.get_state()
-
-    # get pose of all cubes on green plate
     [name, pose, twist] = lynx.get_object_state()
 
+    # get pose of object currently dropping
+    if(object_index == -1):
+        object_pose = []
+    else:
+        object_pose = pose[object_index]
+
+    # get pose of all cubes on green plate
+    new_list = []
     if(color == "blue"):
+
         list = [[pose[i], pose[i][2,3]] for i in range(len(name)) if (pose[i][1,3]>0 and pose[i][1,3] > 440 and pose[i][2,3]>0) ]
+        if(len(list) >= 3 and len(list) < 5):
+            new_list = [[pose[i], pose[i][2,3]] for i in range(len(name)) if (pose[i][1,3]>0 and pose[i][1,3] > 440 and pose[i][2,3]>0 and pose[i][0,3] < 95) ]
+        elif(len(list) >= 5):
+            new_list = [[pose[i], pose[i][2,3]] for i in range(len(name)) if (pose[i][1,3]>0 and pose[i][1,3] > 440 and pose[i][2,3]>0 and pose[i][1,3] < 490) ]
+
     else:
         list = [ [pose[i], pose[i][2,3]] for i in range(len(name)) if (pose[i][1,3]<0 and pose[i][1,3] < -440 and pose[i][2,3]>0)]
+        if(len(list) >= 3 and len(list) < 5):
+            new_list = [[pose[i], pose[i][2,3]] for i in range(len(name)) if (pose[i][1,3]<0 and pose[i][1,3] < -440 and pose[i][2,3]>0 and pose[i][0,3] > -95) ]
+        elif(len(list) >= 5):
+            new_list = [[pose[i], pose[i][2,3]] for i in range(len(name)) if (pose[i][1,3]<0 and pose[i][1,3] < -440 and pose[i][2,3]>0 and pose[i][1,3] > -490) ]
 
-    # Get path of dropping object
+
+    # case dropping the first object
     if(len(list) == 0):
-        path = drop(qStart, color, [])
+        path = drop(qStart, color, [], 0, object_pose)
 
     else:
-
         list = sorted(list, key=operator.itemgetter(1))
+        new_list = sorted(new_list, key=operator.itemgetter(1))
 
-        target_pose = list[-1][0]
+        if(len(list) < 3 or len(new_list) == 0):
+            target_pose = list[-1][0]
 
-        target_loc = target_pose[0:3,-1]
+            target_loc = target_pose[0:3,-1]
+        else:
+            target_pose = new_list[-1][0]
 
-        path = drop(qStart, color, target_loc)
-        
+            target_loc = target_pose[0:3,-1]
+
+        list_len = len(list)
+
+        path = drop(qStart, color, target_loc, list_len, object_pose)
 
     # iterate over target waypoints
+    loop_iter = 0
     for p in path:
         print("Goal:")
         print(p)
 
-        lynx.set_pos(np.ravel(p))
+        # value = 1 if pick dynamic
+        # value = 2 if pick static
+        if(loop_iter == 0 and value == 2):
+            lynx.set_pos(np.ravel(p))
+        elif(loop_iter == 1):
+            lynx.set_pos(np.ravel(p))
+        else:
+            lynx.command(np.ravel(p))
 
         while True:
-            sleep(0.05)
+            sleep(0.005)
             pos, vel = lynx.get_state()
 
-            if np.linalg.norm(np.array(pos[0:4])- np.array(p[0:4])) <= 0.02:
+            if np.linalg.norm(np.array(pos[0:4])- np.array(p[0:4])) <= 0.05:
                 break
+
+        loop_iter+= 1

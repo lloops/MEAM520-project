@@ -26,29 +26,25 @@ if __name__=='__main__':
     lynx = ArmController(str(color))
     sleep(1)
 
+    #lynx.wait_for_start() # Wait for Start Gun to be fired
+
     #############################################
     # Main Code
     #############################################
 
     while True:
-        if pickDynamic(lynx, color) == 0:
-            break
-        if pickDynamic(lynx, color) == 1:
-            drop_object(lynx, color)
-        if pickDynamic(lynx, color) == 2:
-            staticMover = pickStatic(lynx, color)
-            staticMover.pick()
-            drop_object(lynx, color)
+        value, dyn_target_ind = pickDynamic(lynx, color)
 
-    while True:
-        staticMover = pickStatic(lynx, color)
-        staticMover.pick()
-        drop_object(lynx, color)
+        if value == 1:
+            drop_object(lynx, color, dyn_target_ind, value)
+        else:
+            staticMover = pickStatic(lynx, color)
+            target_index = staticMover.pick()
+
+            # if there is no more statics, continue to wait for dynamic
+            if target_index != -1:
+                drop_object(lynx, color, target_index, 2)
+            else:
+                print("no more static objects")
 
     lynx.stop()
-
-
-# get state of your opponent's robot
-# [q, qd]  = lynx.get_opponent_state()
-# print(q)
-# print(qd)
