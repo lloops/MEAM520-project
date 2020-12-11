@@ -31,7 +31,7 @@ def computeRad(x, y, color):
 
 
 # a list of preset points that the Lynx will follow when reaching out to grab a dynamic object
-# based on how far the object is from the gripper, the length of this list will vary
+# based on how far the object is from the gripper, the length of this list will vary.
 def constructPath(distance):
     q1 = [0.8, 0.08, 0.9, -1.0, -1.57, 30]
     q2 = [0.8, 0.16, 0.8, -1.0, -1.57, 30]
