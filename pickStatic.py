@@ -230,7 +230,6 @@ class pickStatic:
             dq2 = [0,0,0, 0, 0, -6]
             q_reach = q_reach + dq2
             path.append(q_reach)
-        #
 
 
         # Safely move away from the platform by lifting the arm
@@ -239,7 +238,6 @@ class pickStatic:
             dq2 = [0,-0.1, 0, 0, 0, 0]
             q_reach = q_reach + dq2
             path.append(q_reach)
-        #
 
 
         # The path is complete; calls move() to execute the path
