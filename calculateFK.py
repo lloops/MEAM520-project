@@ -34,8 +34,7 @@ class calculateFK():
                   representing the end effector frame expressed in the
                   base (0) frame
         """
-        # Your code starts here
-
+        
         jointPositions = np.zeros((6,3))
         T0e = np.identity(4)
 
