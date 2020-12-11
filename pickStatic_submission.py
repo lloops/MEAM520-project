@@ -222,7 +222,7 @@ class pickStatic:
             path.append(q_reach)
 
 
-        # Now after 25 waypoints, the gripper arrives at the target object 
+        # Now after 30 waypoints, the gripper arrives at the target object 
         # close the gripper to grab the object
         q_reach =  np.ravel(path[-1])
         
