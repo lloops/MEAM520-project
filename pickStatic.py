@@ -101,7 +101,6 @@ class pickStatic:
 
         static_lst = sorted(static_lst, key=operator.itemgetter(1))
         target = static_lst[0][0]
-        #
 
 
         ###########################################################
